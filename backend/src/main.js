@@ -58,7 +58,7 @@ const getRarityWeight = (_str) => {
 
 const cleanDna = (_str) => {
   const withoutOptions = removeQueryStrings(_str);
-  var dna = Number(withoutOptions.split(":").shift());
+  var dna = Number(withoutOptions.split(":").shift());//0
   return dna;
 };
 
@@ -354,7 +354,9 @@ const startCreating = async () => {
     ) {
       let newDna = createDna(layers);
       if (isDnaUnique(dnaList, newDna)) {
+        console.log("newDna:", newDna);
         let results = constructLayerToDna(newDna, layers);
+        console.log("layerToDna:", results);
         let loadedElements = [];
 
         results.forEach((layer) => {
