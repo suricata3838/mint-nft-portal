@@ -28,7 +28,7 @@ ctx.imageSmoothingEnabled = format.smoothing;
 var metadataList = [];
 var attributesList = [];
 var dnaList = new Set();
-const DNA_DELIMITER = "-";
+const DNA_DELIMITER = "_";
 const HashlipsGiffer = require(`${basePath}/modules/HashlipsGiffer.js`);
 
 let hashlipsGiffer = null;
@@ -56,9 +56,9 @@ const getRarityWeight = (_str) => {
   return nameWithoutWeight;
 };
 
-const cleanDna = (_str) => {
+const pickDnaArr = (_str) => {
   const withoutOptions = removeQueryStrings(_str);
-  var dna = Number(withoutOptions.split(":").shift());//0
+  var dna = withoutOptions.split(":").map((v,i, arr) => i !== arr.length -1 ? Number(v): v);
   return dna;
 };
 
@@ -73,37 +73,76 @@ const getElements = (path) => {
     .readdirSync(path)
     .filter((item) => !/(^|\/)\.[^\/\.]/g.test(item))
     .map((i, index) => {
-      return {
+      const result = {
         id: index,
         name: cleanName(i),
         filename: i,
         path: `${path}${i}`,
         weight: getRarityWeight(i),
       };
+      return result;
     });
 };
 
+// DONE: add the property of color code
+const getColorElements = (path) => {
+  //Path: `${path}${i}/`
+  let result = [];
+  for (let i = 1; i < 10; i++){
+    result.push(
+      fs
+      .readdirSync(`${path}${i}/`)
+      .map((j, index) => {
+        let color = j.split("-")[2] ? (j.split("-")[2]).split(".")[0] : undefined;
+        const element = {
+          id: index,
+          name: cleanName(j),
+          filename: j,
+          path: `${path}${i}/${j}`,
+          weight: getRarityWeight(j),
+          color,
+        };
+        return element;
+      })
+    );
+  }
+  // console.log("result:", result);
+  return result;
+};
+
 const layersSetup = (layersOrder) => {
-  const layers = layersOrder.map((layerObj, index) => ({
-    id: index,
-    elements: getElements(`${layersDir}/${layerObj.name}/`),
-    name:
-      layerObj.options?.["displayName"] != undefined
-        ? layerObj.options?.["displayName"]
-        : layerObj.name,
-    blend:
-      layerObj.options?.["blend"] != undefined
-        ? layerObj.options?.["blend"]
-        : "source-over",
-    opacity:
-      layerObj.options?.["opacity"] != undefined
-        ? layerObj.options?.["opacity"]
-        : 1,
-    bypassDNA:
-      layerObj.options?.["bypassDNA"] !== undefined
-        ? layerObj.options?.["bypassDNA"]
-        : false,
-  }));
+  const layers = layersOrder.map((layerObj, index) => {
+    let elements;
+    if (layerObj.options?.["colorSet"] !== undefined) {
+      elements = getColorElements(`${layersDir}/${layerObj.name}/`);
+    } else {
+      elements = getElements(`${layersDir}/${layerObj.name}/`);
+    }
+    return {
+      id: index,
+      elements,
+      name:
+        layerObj.options?.["displayName"] != undefined
+          ? layerObj.options?.["displayName"]
+          : layerObj.name,
+      blend:
+        layerObj.options?.["blend"] != undefined
+          ? layerObj.options?.["blend"]
+          : "source-over",
+      opacity:
+        layerObj.options?.["opacity"] != undefined
+          ? layerObj.options?.["opacity"]
+          : 1,
+      bypassDNA:
+        layerObj.options?.["bypassDNA"] !== undefined
+          ? layerObj.options?.["bypassDNA"]
+          : false,
+      colorSet:
+        layerObj.options?.["colorSet"] !== undefined
+          ? layerObj.options?.["colorSet"]
+          : false,
+      }
+    });
   return layers;
 };
 
@@ -213,15 +252,24 @@ const drawElement = (_renderObject, _index, _layersLen) => {
 };
 
 const constructLayerToDna = (_dna = "", _layers = []) => {
+  // DNA: [id]:[filename]_...
+  // 1:1-2.png_6:3-1-6.png_5:2-3-6.png
+  console.log("DNA:", _dna);
   let mappedDnaToLayers = _layers.map((layer, index) => {
-    let selectedElement = layer.elements.find(
-      (e) => e.id == cleanDna(_dna.split(DNA_DELIMITER)[index])
-    );
+    // dnaArr =
+    // 3:1:1-2.png([color]:[id]:[filename])
+    let dnaArr = pickDnaArr(_dna.split(DNA_DELIMITER)[index]);
+
+    // If colorSet = true, elements type is Double Array
+    let selectedElement = layer.colorSet
+    ? layer.elements[dnaArr[0]][dnaArr[1]]
+    : layer.elements[dnaArr.shift()];
+
     return {
       name: layer.name,
       blend: layer.blend,
       opacity: layer.opacity,
-      selectedElement: selectedElement,
+      selectedElement,
     };
   });
   return mappedDnaToLayers;
@@ -272,24 +320,40 @@ const isDnaUnique = (_DnaList = new Set(), _dna = "") => {
   return !_DnaList.has(_filteredDNA);
 };
 
+const getRandomInt = (max) => {
+  return Math.floor(Math.random() * max);
+};
+
+// TODO: make the colorSet is configurable based on rarity 
 const createDna = (_layers) => {
   let randNum = [];
+  let color = getRandomInt(9); // This color should be used for all layers where colorSet is true.
+  console.log("colorInt:", color);
   _layers.forEach((layer) => {
-    var totalWeight = 0;
-    layer.elements.forEach((element) => {
-      totalWeight += element.weight;
-    });
-    // number between 0 - totalWeight
-    let random = Math.floor(Math.random() * totalWeight);
-    for (var i = 0; i < layer.elements.length; i++) {
-      // subtract the current weight from the random weight until we reach a sub zero value.
-      random -= layer.elements[i].weight;
-      if (random < 0) {
-        return randNum.push(
-          `${layer.elements[i].id}:${layer.elements[i].filename}${
-            layer.bypassDNA ? "?bypassDNA=true" : ""
-          }`
-        );
+    if(layer.colorSet){
+      let pattern = getRandomInt(7);
+      console.log("pattern:", pattern);
+      //colorInt=2 -> color:3(0, 1, 2)
+      console.log(`${layer.elements[color][pattern].id}:${layer.elements[color][pattern].filename}`);
+      console.log(`${layer.elements[color][pattern]}`);
+      return randNum.push(`${color}:${layer.elements[color][pattern].id}:${layer.elements[color][pattern].filename}`);
+    } else {
+      var totalWeight = 0;
+      layer.elements.forEach((element) => {
+        totalWeight += element.weight;
+      });
+      // getRandomInt between 0 - totalWeight
+      let random = getRandomInt(totalWeight);
+      for (var i = 0; i < layer.elements.length; i++) {
+        // subtract the current weight from the random weight until we reach a sub zero value.
+        random -= layer.elements[i].weight;
+        if (random < 0) {
+          return randNum.push(
+            `${layer.elements[i].id}:${layer.elements[i].filename}${
+              layer.bypassDNA ? "?bypassDNA=true" : ""
+            }`
+          );
+        }
       }
     }
   });
@@ -354,9 +418,8 @@ const startCreating = async () => {
     ) {
       let newDna = createDna(layers);
       if (isDnaUnique(dnaList, newDna)) {
-        console.log("newDna:", newDna);
         let results = constructLayerToDna(newDna, layers);
-        console.log("layerToDna:", results);
+        // console.log("layerToDna:", results);
         let loadedElements = [];
 
         results.forEach((layer) => {
