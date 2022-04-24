@@ -1,5 +1,6 @@
 const basePath = process.cwd();
 const { NETWORK } = require(`${basePath}/constants/network.js`);
+const { assert } = require("console");
 const fs = require("fs");
 const sha1 = require(`${basePath}/node_modules/sha1`);
 const { createCanvas, loadImage } = require(`${basePath}/node_modules/canvas`);
@@ -84,11 +85,12 @@ const getElements = (path) => {
     });
 };
 
-// DONE: add the property of color code
-const getColorElements = (path) => {
-  //Path: `${path}${i}/`
+// TODO: add the property of color code
+const getColorElements = (path, colorSet="") => {
+  // Path: `${path}${i}/`
+  let type = Number(colorSet.split("-")[1]); //"hair-9" -> 9, "headphone-3" -> 3
   let result = [];
-  for (let i = 1; i < 10; i++){
+  for (let i = 1; i < type+1; i++){
     result.push(
       fs
       .readdirSync(`${path}${i}/`)
@@ -106,7 +108,6 @@ const getColorElements = (path) => {
       })
     );
   }
-  // console.log("result:", result);
   return result;
 };
 
@@ -114,7 +115,7 @@ const layersSetup = (layersOrder) => {
   const layers = layersOrder.map((layerObj, index) => {
     let elements;
     if (layerObj.options?.["colorSet"] !== undefined) {
-      elements = getColorElements(`${layersDir}/${layerObj.name}/`);
+      elements = getColorElements(`${layersDir}/${layerObj.name}/`, layerObj.options?.["colorSet"]);
     } else {
       elements = getElements(`${layersDir}/${layerObj.name}/`);
     }
@@ -260,7 +261,7 @@ const constructLayerToDna = (_dna = "", _layers = []) => {
     // 3:1:1-2.png([color]:[id]:[filename])
     let dnaArr = pickDnaArr(_dna.split(DNA_DELIMITER)[index]);
 
-    // If colorSet = true, elements type is Double Array
+    // If layer has colorSet, elements type is Double Array
     let selectedElement = layer.colorSet
     ? layer.elements[dnaArr[0]][dnaArr[1]]
     : layer.elements[dnaArr.shift()];
@@ -327,16 +328,38 @@ const getRandomInt = (max) => {
 // TODO: make the colorSet is configurable based on rarity 
 const createDna = (_layers) => {
   let randNum = [];
-  let color = getRandomInt(9); // This color should be used for all layers where colorSet is true.
-  console.log("colorInt:", color);
+
+  // colorMap:
+  // {
+  //   "hair-9": 5(folder number),
+  //   "headphone-3": 1,
+  // }
+  const colorMap = new Map();
+
   _layers.forEach((layer) => {
-    if(layer.colorSet){
+
+    if (layer.colorSet && colorMap.get(layer.colorSet) == undefined ){
+      // console.log("layer.colorSet:", layer.colorSet, colorMap.get(layer.colorSet)); // undefined
+      let type = Number((layer.colorSet).split("-")[1]); //"hair-9" -> 9
+      let colorInt = getRandomInt(type);
+      colorMap.set(layer.colorSet, colorInt);
+
+      //assertion
+      assert(colorMap.get(layer.colorSet), colorInt);
+    }
+
+    // The "hair" pairing of frontHair and backHair needs one more random called patten 
+    if(layer.colorSet && layer.colorSet.includes("hair")){
+      let colorInt = colorMap.get(layer.colorSet);
       let pattern = getRandomInt(7);
-      console.log("pattern:", pattern);
       //colorInt=2 -> color:3(0, 1, 2)
-      console.log(`${layer.elements[color][pattern].id}:${layer.elements[color][pattern].filename}`);
-      console.log(`${layer.elements[color][pattern]}`);
-      return randNum.push(`${color}:${layer.elements[color][pattern].id}:${layer.elements[color][pattern].filename}`);
+      return randNum.push(`${colorInt}:${layer.elements[colorInt][pattern].id}:${layer.elements[colorInt][pattern].filename}`);
+    
+    // Other pairing, etc "headphone"
+    } else if(layer.colorSet){
+      let colorInt = colorMap.get(layer.colorSet);
+      return randNum.push(`${colorInt}:${layer.elements[colorInt][0].id}:${layer.elements[colorInt][0].filename}`);
+    
     } else {
       var totalWeight = 0;
       layer.elements.forEach((element) => {

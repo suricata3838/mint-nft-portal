@@ -23,20 +23,30 @@ const layerConfigurations = [
       { name: "animalEar" },
       { name: "backHair",
         options: {
-          "colorSet": true
+          "colorSet": "hair-9"
         },
       },
       // { name: "dressC" },
+      { name: "backHeadphone",
+        options: {
+          "colorSet": "headphone-3"
+        },
+      },
       { name: "body" },
       { name: "tatoo" },
       { name: "dress" },
       { name: "face" },
       { name: "frontHair",
         options: {
-         "colorSet": true
+         "colorSet": "hair-9"
         },
       },
       { name: "faceAccessory" },
+      { name: "frontHeadphone",
+      options: {
+        "colorSet": "headphone-3"
+      },
+    },
       // { name: "dressA" },// hat,cap 
       { name: "effectA" },
     ],
