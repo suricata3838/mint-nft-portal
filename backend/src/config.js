@@ -14,19 +14,20 @@ const baseUri = "ipfs://NewUriToReplace"; // This will be replaced automatically
 // If you have selected Solana then the collection starts from 0 automatically
 const layerConfigurations = [
   {
-    // If ColorSet:true, the color of all payers is gonna be samein one DNA.
     // How to manage Optional layer and rarity
     // -> prepare each set of growEditionSizeTo and layersOrder
+
+    //TODO: update layerName
     growEditionSizeTo: 10,
     layersOrder: [
       { name: "bg" },
       { name: "animalEar" },
+      // { name: "dressC" },
       { name: "backHair",
         options: {
           "colorSet": "hair-9"
         },
       },
-      // { name: "dressC" },
       { name: "backHeadphone",
         options: {
           "colorSet": "headphone-3"
@@ -36,17 +37,17 @@ const layerConfigurations = [
       { name: "tatoo" },
       { name: "dress" },
       { name: "face" },
+      { name: "frontHeadphone",
+        options: {
+          "colorSet": "headphone-3"
+        },
+      },
       { name: "frontHair",
         options: {
          "colorSet": "hair-9"
         },
       },
       { name: "faceAccessory" },
-      { name: "frontHeadphone",
-      options: {
-        "colorSet": "headphone-3"
-      },
-    },
       // { name: "dressA" },// hat,cap 
       { name: "effectA" },
     ],
