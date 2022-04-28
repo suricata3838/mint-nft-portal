@@ -2,7 +2,7 @@ const contractAddress = "0x41004871AF55451864cF28E6851dA0D2f7c53878"; //Replace 
 const chain = 'rinkeby'; // rinkeby or polygon
 
 const welcome_h1 = "Welcome to the Henohenomoheji NFT Project!!";
-const welcome_h2 = "Connect to MetaMask to Get Started";
+const welcome_h2 = "Install and COnnect MetaMask to Get Started";
 const welcome_p = 'The Henohenomoheji NFT Project is a decentralized, open-source project that aims to demonstrate how to develope and launch your own NFT Collection.';
 const h1_presale_coming_soon = "NFT Drop Coming Soon!!";
 const h1_presale_mint = "Pre-Sale Minting Open!!";

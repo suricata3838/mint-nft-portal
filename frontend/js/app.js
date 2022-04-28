@@ -38,6 +38,7 @@ window.addEventListener("DOMContentLoaded", async () => {
   splide.mount();
 
   updateConnectStatus();
+  console.log("isMetaMaskInstalled():", MetaMaskOnboarding.isMetaMaskInstalled());
   if (MetaMaskOnboarding.isMetaMaskInstalled()) {
     window.ethereum.on("accountsChanged", (newAccounts) => {
       accounts = newAccounts;
@@ -51,16 +52,19 @@ const updateConnectStatus = async () => {
   const onboardButton = document.getElementById("connectWallet");
   const notConnected = document.querySelector('.not-connected');
   const spinner = document.getElementById("spinner");
+  console.log("hit??");
   if (!MetaMaskOnboarding.isMetaMaskInstalled()) {
+    console.log("onboarding?:", onboarding);
     onboardButton.innerText = "Install MetaMask!";
+    // HIDE SPINNER
+    spinner.classList.add('hidden');
+    notConnected.classList.remove('hidden');
+    notConnected.classList.add('show-not-connected');
     onboardButton.onclick = () => {
+      console.log("button clicked?");
       onboardButton.innerText = "Connecting...";
       onboardButton.disabled = true;
-      onboarding.startOnboarding();
-      // HIDE SPINNER
-      spinner.classList.add('hidden');
-      notConnected.classList.remove('hidden');
-      notConnected.classList.add('show-not-connected');
+      onboarding.startOnboarding(); //jump to the install page
     };
   } else if (accounts && accounts.length > 0) {
     onboardButton.innerText = `✔ ...${accounts[0].slice(-4)}`;
@@ -74,11 +78,12 @@ const updateConnectStatus = async () => {
     window.contract = new web3.eth.Contract(abi, contractAddress);
     loadInfo();
   } else {
+    console.log("hit!!");
     onboardButton.innerText = "Connect MetaMask!";
     // HIDE SPINNER
     spinner.classList.add('hidden');
     notConnected.classList.remove('hidden');
-    notConnected.classList.add('show-not-connected');
+    //notConnected.classList.add('show-not-connected');
     onboardButton.onclick = async () => {
       await window.ethereum
         .request({
@@ -96,7 +101,7 @@ const updateConnectStatus = async () => {
           window.contract = new web3.eth.Contract(abi, contractAddress);
           loadInfo();
         });
-    };
+    }; 
   }
 };
 
